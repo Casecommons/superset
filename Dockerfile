@@ -8,18 +8,28 @@ ARG PYTHON_VERSION=3.6
 FROM node:${NODE_VERSION} AS build
 
 # Superset version to build
-ARG SUPERSET_VERSION=master
+ARG SUPERSET_VERSION=0.37.2
 ENV SUPERSET_HOME=/var/lib/superset/
 
 # Download source
 WORKDIR ${SUPERSET_HOME}
-RUN wget -qO /tmp/superset.tar.gz https://github.com/apache/incubator-superset/archive/${SUPERSET_VERSION}.tar.gz
-RUN tar xzf /tmp/superset.tar.gz -C ${SUPERSET_HOME} --strip-components=1
+RUN wget -O /tmp/superset.tar.gz https://github.com/apache/incubator-superset/archive/${SUPERSET_VERSION}.tar.gz && \
+    tar xzf /tmp/superset.tar.gz -C ${SUPERSET_HOME} --strip-components=1
 
 # Build assets
-WORKDIR ${SUPERSET_HOME}/superset-frontend/
-RUN npm install
-RUN npm run build
+WORKDIR ${SUPERSET_HOME}/superset-frontend
+COPY ./custom/casebook-logo-252x58.png images/casebook-logo-252x58.png
+COPY ./custom/casebook-icon-16x16.png images/favicon.png
+RUN \
+  sed -i 's/superset-logo-horiz.png/casebook-logo-252x58.png/g' ../superset/config.py && \
+  sed -i 's/\"Superset\"/\"Casebook\"/g' ../superset/config.py && \
+  mkdir -p stylesheets/less/cbp
+COPY custom/stylesheets/index.less stylesheets/less/index.less
+COPY custom/stylesheets/cbp/* stylesheets/less/cbp/
+
+RUN \
+  npm install && \
+  npm run build
 
 #
 # --- Build dist package with Python 3
@@ -34,8 +44,8 @@ COPY --from=build ${SUPERSET_HOME} .
 COPY requirements.txt .
 
 # Create package to install
-RUN python setup.py sdist
-RUN tar czfv /tmp/superset.tar.gz requirements.txt dist
+RUN python setup.py sdist && \
+    tar czfv /tmp/superset.tar.gz requirements.txt requirements-db.txt dist
 
 #
 # --- Install dist package and finalize app
