@@ -45,7 +45,7 @@ COPY requirements.txt .
 
 # Create package to install
 RUN python setup.py sdist && \
-    tar czfv /tmp/superset.tar.gz requirements.txt requirements-db.txt dist
+    tar czfv /tmp/superset.tar.gz requirements.txt dist
 
 #
 # --- Install dist package and finalize app

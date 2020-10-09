@@ -44,6 +44,28 @@ version=0.37.2.1
 docker build -t casebook/superset:${version} .
 ```
 
+```
+issue
+-------
+11% building 9/18 modules 9 active ...t/superset/assets/src/welcome/index.jsxBr 
+92% chunk asset optimization OptimizeCssAssetsWebpackPluginBrowserslist: caniuse-lite is outdated. Please run next command `npm update`
+92% chunk asset optimization TerserPluginnpm ERR! code ELIFECYCLE
+
+npm ERR! errno 1
+npm ERR! superset@0.35.0 build: `cross-env NODE_OPTIONS=--max_old_space_size=8192 NODE_ENV=production webpack --mode=production --colors --progress`
+npm ERR! Exit status 1
+npm ERR!
+npm ERR! Failed at the superset@0.35.0 build script.
+npm ERR! This is probably not a problem with npm. There is likely additional logging output above.
+
+solution
+--------
+ran out of heap memory for docker
+On a MacOSX, click docker icon at top right
+preferences > resources > + Memory
+Click Apply # will kill running containers
+```
+
 ## Test image
 ```
 docker ps
