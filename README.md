@@ -56,7 +56,7 @@ vi .dockerignore
 
 vi Dockerfile
   ARG SUPERSET_VERSION=[version]
-  and custom build section
+  and custom build section from /tmp/Dockerfile
 docker build -t casebook/superset:${version} .
 ```
 
