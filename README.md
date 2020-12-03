@@ -1,94 +1,102 @@
-# Superset
+# Casebook Infrastructure
 
-![version](https://img.shields.io/docker/v/amancevice/superset?color=blue&label=version&logo=docker&logoColor=eee&sort=semver&style=flat-square)
-[![latest](https://img.shields.io/github/workflow/status/amancevice/docker-superset/latest?label=latest&logo=github&style=flat-square)](https://github.com/amancevice/docker-superset/actions)
-[![edge](https://img.shields.io/github/workflow/status/amancevice/docker-superset/edge?label=edge&logo=github&style=flat-square)](https://github.com/amancevice/docker-superset/actions)
+Fork of github.com:amancevice/docker-superset.git (upstrem)
 
-Docker image for [Superset](https://github.com/ApacheInfra/superset).
+## Initial First time Setup
+```
+git clone git@github.com:Casecommons/superset.git
+cd superset
+git remote add upstream https://github.com/amancevice/docker-superset
 
-This project is unofficial and not related to Superset or Apache.
+git remote -v
+  origin  git@github.com:Casecommons/superset.git (fetch)
+  origin  git@github.com:Casecommons/superset.git (push)
+  upstream        https://github.com/amancevice/docker-superset (fetch)
+  upstream        https://github.com/amancevice/docker-superset (push)
 
-## Download
-
-Download this image from the Docker registry:
-
-```bash
-docker pull amancevice/superset:<version>
+git checkout master
+git merge upstream/master
 ```
 
-## Building
-
-I **DO NOT** recommend building this image directly from the Dockerfile included in this repository.
-
-If you wish to extend this image then the best course of action is to write your own Dockerfile that extends this image. Eg,
-
-```Dockerfile
-FROM amancevice/superset:<version>
-USER root
-# Your changes...
-USER superset
+## Update with upstream
+```
+git fetch upstream
+git fetch upstream --tags
+git ls-remote --tags https://github.com/amancevice/docker-superset
 ```
 
-## Issues
+## Customize version
+```
+# note: 0.35.2.x x is casebook revision
+# version can be found from: 
+#   https://github.com/amancevice/docker-superset/blob/2020.12.1/Makefile
+#   SUPERSET_VERSION := 0.38.0
+# git checkout tags/2020.12.1 -b 0.38.0.1 2020.12.1 # 2020.12.1 is 0.38.0
 
-Please **ONLY** file issues in this project that are related to Docker and **DO** include the Docker commands or compose configuration of your setup when filing issues (be sure to hide any secrets/passwords before submitting).
+revision=1
+version=0.38.0.${revision}
+old_version=0.37.2.1
+amancevice_version=2020.12.1
 
-File issues/bugs with Superset at the [source](https://github.com/apache/incubator-superset/issues).
-
-Please **DO NOT** files issues like "Please include `<some-python-pip>` in the Dockerfile," open a [pull request](https://github.com/amancevice/superset/pulls) for updates/enhancements.
-
-
-## Examples
-
-Navigate to the [`examples`](./examples) directory to view examples of how to configure Superset with MySQL, PostgreSQL, or SQLite.
-
-
-## Versions
-
-This repo is tagged in parallel with superset. Pulling `amancevice/superset:0.18.5` will fetch the image of this repository running superset version `0.18.5`. It is possible that the `latest` tag includes new features/support libraries but will usually be in sync with the latest semantic version.
-
-
-## Configuration
-
-Follow the [instructions](https://superset.incubator.apache.org/installation.html#configuration) provided by Apache Superset for writing your own `superset_config.py`. Place this file in a local directory and mount this directory to `/etc/superset` inside the container. This location is included in the image's `PYTHONPATH`. Mounting this file to a different location is possible, but it will need to be in the `PYTHONPATH`.
-
-View the contents of the [`examples`](./examples) directory to see some simple `superset_config.py` samples.
-
-
-## Volumes
-
-The image defines two data volumes: one for mounting configuration into the container, and one for data (logs, SQLite DBs, &c).
-
-The configuration volume is located alternatively at `/etc/superset` or `/home/superset`; either is acceptable. Both of these directories are included in the `PYTHONPATH` of the image. Mount any configuration (specifically the `superset_config.py` file) here to have it read by the app on startup.
-
-The data volume is located at `/var/lib/superset` and it is where you would mount your SQLite file (if you are using that as your backend), or a volume to collect any logs that are routed there. This location is used as the value of the `SUPERSET_HOME` environmental variable.
-
-## Database Initialization
-
-After starting the Superset server, initialize the database with an admin user and Superset tables using the `superset-init` helper script:
-
-```bash
-docker run --detach --name superset [options] amancevice/superset
-docker exec -it superset superset-init
+# git checkout previous version
+git checkout ${old_version}
+rsync -av custom /tmp
+cp README.md Dockerfile /tmp
+git fetch --all --tags
+git checkout  tags/${amancevice_version} -b ${version}
+mv /tmp/custom .
+mv /tmp/README.md .
+git add custom/*
 ```
 
-## Upgrading
+# Create image
+```
+vi .dockerignore
+!custom
 
-Upgrading to a newer version of superset can be accomplished by re-pulling `amancevice/superset`at a specified superset version or `latest` (see above for more on this). Remove the old container and re-deploy, making sure to use the correct environmental configuration. Finally, ensure the superset database is migrated up to the head:
+vi Dockerfile
+  ARG SUPERSET_VERSION=[version]
+  and custom build section
+docker build -t casebook/superset:${version} .
+```
 
-```bash
-# Pull desired version
-docker pull amancevice/superset
+```
+issue
+-------
+11% building 9/18 modules 9 active ...t/superset/assets/src/welcome/index.jsxBr 
+92% chunk asset optimization OptimizeCssAssetsWebpackPluginBrowserslist: caniuse-lite is outdated. Please run next command `npm update`
+92% chunk asset optimization TerserPluginnpm ERR! code ELIFECYCLE
 
-# Remove the current container
-docker rm -f superset-old
+npm ERR! errno 1
+npm ERR! superset@0.35.0 build: `cross-env NODE_OPTIONS=--max_old_space_size=8192 NODE_ENV=production webpack --mode=production --colors --progress`
+npm ERR! Exit status 1
+npm ERR!
+npm ERR! Failed at the superset@0.35.0 build script.
+npm ERR! This is probably not a problem with npm. There is likely additional logging output above.
 
-# Deploy a new container ...
-docker run --detach --name superset-new [options] amancevice/superset
+solution
+--------
+ran out of heap memory for docker
+On a MacOSX, click docker icon at top right
+preferences > resources > + Memory
+Click Apply # will kill running containers
+```
 
-# Upgrade the DB
-docker exec superset-new superset db upgrade
+## Test image
+```
+docker ps
+docker stop [old_superset_pid]
+docker run -d  -p 8088:8088 casebook/superset:${version}
+docker ps
+docker exec -it [new_superset_pid] sh
+```
 
-# Sync the base permissions
-docker exec superset-new superset init
+Open in a browser: http://localhost:8088
+
+## Push image to Docker Hub
+Requires Docker Hub login to Casebook Group
+```
+docker login -u [username]
+docker tag casebook/superset:${version} casebook/superset:latest
+docker push casebook/superset
 ```

@@ -8,7 +8,7 @@ ARG PYTHON_VERSION=3.8
 FROM node:${NODE_VERSION} AS build
 
 # Superset version to build
-ARG SUPERSET_VERSION=master
+ARG SUPERSET_VERSION=0.38.0
 ENV SUPERSET_HOME=/var/lib/superset/
 
 # Download source
@@ -17,9 +17,19 @@ RUN wget -qO /tmp/superset.tar.gz https://github.com/apache/incubator-superset/a
 RUN tar xzf /tmp/superset.tar.gz -C ${SUPERSET_HOME} --strip-components=1
 
 # Build assets
-WORKDIR ${SUPERSET_HOME}/superset-frontend/
-RUN npm install
-RUN npm run build
+WORKDIR ${SUPERSET_HOME}/superset-frontend
+COPY ./custom/casebook-logo-252x58.png images/casebook-logo-252x58.png
+COPY ./custom/casebook-icon-16x16.png images/favicon.png
+RUN \
+  sed -i 's/superset-logo-horiz.png/casebook-logo-252x58.png/g' ../superset/config.py && \
+  sed -i 's/\"Superset\"/\"Casebook\"/g' ../superset/config.py && \
+  mkdir -p stylesheets/less/cbp
+COPY custom/stylesheets/index.less stylesheets/less/index.less
+COPY custom/stylesheets/cbp/* stylesheets/less/cbp/
+
+RUN \
+  npm install && \
+  npm run build
 
 #
 # --- Build dist package with Python 3
@@ -72,6 +82,7 @@ RUN groupadd supergroup && \
     chown -R superset:superset ${SUPERSET_HOME} && \
     apt-get update && \
     apt-get install -y \
+        apt-utils \
         build-essential \
         curl \
         default-libmysqlclient-dev \
@@ -85,8 +96,17 @@ RUN groupadd supergroup && \
         libsasl2-dev \
         libsasl2-modules-gssapi-mit \
         libssl-dev && \
-    apt-get clean && \
     tar xzf superset.tar.gz && \
+    pip install pip --upgrade && \
+    pip install numpy==1.18.5 && \
+    pip install pandas==1.0.4 && \
+    pip install convertdate==2.2.1 && \
+    pip install LunarCalendar==0.0.9 && \
+    pip install holidays==0.10.2 && \
+    pip install matplotlib==3.2.1 && \
+    pip install plotly==4.8.1 && \
+    pip install pystan==2.19.1.1 && \
+    pip install tqdm && \
     pip install Cython==0.29.21 && \
     pip install dist/*.tar.gz -r requirements.txt && \
     rm -rf ./*

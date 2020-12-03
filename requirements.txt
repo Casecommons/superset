@@ -24,3 +24,5 @@ snowflake-sqlalchemy==1.2.1
 sqlalchemy-clickhouse==0.1.5.post0
 sqlalchemy-redshift==0.7.1
 thrift-sasl==0.3.0
+boto3==1.15.18
+azure-core==1.8.2
